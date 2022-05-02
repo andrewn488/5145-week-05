@@ -1,0 +1,352 @@
+---
+title: "Week-05-Notes"
+author: "Andrew Nalundasan"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    number_sections: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Overview Video
+
++ Office Hours - Recordings on weekly pages
++ DTC
+
+    + Due June 7
+        + 300 points
+        + AdventureWorksDW2017 (denormalized data structure)
+        + Database Diagram - find one online
+    + Technical Document
+        + Similar to what we've been doing with the book
+        + Statement of the problem and how we solved it
+        + Prior to showing query and results, provide a narrative of your approach and conclusions (solid paragraph)
+        + Include query and results
+    + Midterm
+        + 10 essay questions - brief and concise and COMPLETE
+            + Heavy on Week 1 videos
+        + 17 SQL queries using AdventureWorks2017
+            + Some really easy, others hard
+            + Some have hints or specify expected number of rows
+        + 4 days to complete
+            + released Thursday 5/5
+            + due midnight Sunday 5/8
+    + Professionalism
+        + spruce up result sets
+
+# 05-01: Chp 12 Totals and Aggregations
+
++ Summarization & Aggregation
++ Totals & Analytics
++ Get the data then summarize and analyze the data
+
+## Overview
+
++ Aggregates
+
+    + COUNT
+    + SUM
+    + AVG
+    + MAX
+    + MIN
+    + STDEV / STDEVP ("P" = population)
+    + VAR / VARP ("P" = population)
+    
++ Uses
+
+    + How many in one area compared to all other locations?
+    + Variance of something for a group of people?
+    + Average of something for a group of people?
+    + What should we be focusing in on?
+    
++ Structure
+
+    + Looks like expressions in the SELECT statement
+
+## Count
+
++ COUNT (*) <- returns the number of items in a group ("count my rows")
++ COUNT (ALL expression) <- evaluates the expression for each row in a group, for non-null values
+
+    + Do COUNT (*) and COUNT (expression) to track nulls if that's interesting 
+    
++ COUNT (DISTINCT expression) <- evaluates the expression for each row in a group
+
+    + returns "unique" results
+    + for non-null values
+    
++ Examples
+
+    SELECT COUNT(*)
+    FROM HumanResources.Employee AS e;
+        + Results: 290 rows
+    
+    SELECT COUNT(ALL e.Title)
+    From HumanResources.Employee AS e;
+        + Results: 290 rows with titles in them (doesn't count the number of titles)
+        
+    SELECT COUNT(DISTINCT e.Title)
+    From HumanResources.Employee AS e;
+        + Results: 67 distinct titles used in the table
+        
+    SELECT COUNT(*)
+    From HumanResources.Employee AS e
+    WHERE e.DeptID = 3;
+        + Results: 45 rows
+        
+    SELECT COUNT(*)
+    From HumanResources.Employee AS e
+    INNER JOIN HumanResources.Department AS d
+    ON e.DeptID = d.DeptID
+    WHERE e.DeptID = 'Sales';
+        + Results: 45 rows
+        + Returns number of employees in the Sales department
+
+## SUM, AVG, MAX, MIN
+
++ function (ALL expression)
+    
+    + evaluates the expression for each row in a group
+    + Ignores null values
+    
++ function (DISTINCT expression)
+
+    + Evaluates the expression for each row in a group
+    + returns "unique" results
+    + ignores null values
+
++ Examples
+
+    SELECT MAX(list_price)
+    FROM sales.order_items AS i
+    
+    SELECT AVG(salary), MAX(salary), MIN(salary)
+    FROM employees AS e
+        + strictly for numeric processing
+        + unable to select columns from table not aggregating
+        
++ Rules
+
+    + function ()
+        + ALL <- applies the aggregate function to all values. ALL is the default
+        + DISTINCT <- specifies that the function() operates only on one **unique instance of each value**, regardless of how many times that value occurs
+        + *expression* <- an expression of the exact numeric or approximate numeric data type category
+    + Other than COUNT, all functions are for numeric columns ONLY
+
+## Hands On
+
++ Practice in Virtual Desktop
+
+## STDEV, VAR
+
++ Examples
+
+    SELECT STDEV(s.Bonus)
+    FROM Sales.Salesperson AS s;
+    
+    SELECT AVG(s.Bonus), SUM(s.Bonus),
+      STDEV(s.Bonus), VAR(s.Bonus)
+    FROM Sales.Salesperson AS s
+    
++ Population <- use entire dataset of population
+    
+    + Use STDEV, VAR when analyzing subset of population
+    + Use STDEVP, VARP when analyzing entire population
+
+# 05-02: Chp 13 Grouping
+
++ If no groupby() function, would need to write separate queries and UNION everything on top of each other
+
+## Grouping
+
++ Using the GROUP BY feature after WHERE, before ORDER BY
++ Summarizes data into "groups"
+    
+    + Usually this means columns or expressions
+    SELECT YEAR(OrderDate), SUM(OrderAmount)
+    FROM Sales.Orders
+    GROUP BY Year(OrderDate);
+    
++ Rules
+
+    + Direct relationship between: 
+        + SELECT Columns/Expression
+        + GROUP BY clause
+    + Columns not used in aggregate functions MUST be used in the GROUP BY
+    
++ ORDER BY
+
+    + GROUP BY
+        + Gathers rows into groups AND
+        + Sorts the groups alphabetically on the columns in the GROUP BY clause
+    + ORDER BY
+        + Sorts the result set by individual rows
+        + MUST be the last clause in a query
+        + ORDER BY COUNT(*) will order by numerical order
+
+
+## GROUP BY Examples
+
++ Talking thru some examples and use cases
+
+## GROUP BY Subqueries
+
++ tool in creating "virtual" tables
++ legal to include in FROM or WHERE
++ must follow the rules on GROUP BY
++ build the query to perform the analysis for you to be repeatable with current data
+
+## GROUP BY Hands On
+
++ Practice using AdventureWorks2012
+
+# 05-03: Chp 14 Filtering Groups
+
+## Filtering Grouped Data
+
++ limitations to WHERE clause
++ filtering with GROUP BY can help enhance WHERE clause (HAVING)
++ HAVING <- clause to filter grouped data
+
+    + acts like a WHERE clause on the grouped rows
+    + For filtering GROUP BY rows, after aggregation
+    + And... because the WHERE clause cannot be used on aggregate functions
+    SELECT c.Country, COUNT(c.CustomerID)
+    FROM Customers AS c
+    WHERE c.Region IN ('Europe', 'Asia')
+    GROUP BY c.Country
+    + WHERE clause interacts directly with FROM clause
+    + HAVING clause interacts directly with GROUP BY clause
+    + HAVING performs like a WHERE clause, but is applied to the filtered data
+    HAVING COUNT(CustomerID) > 5  # only returns countries that have > 5 customers
+    
++ Rules
+
+    + HAVING only acts on rows **after** they have been grouped
+    + Can ONLY compare columns/expressions included in the SELECT clause
+    SELECT YEAR(s.OrderDate), SUM(s.OrderAmount)
+    FROM Sales.Orders AS s
+    GROUP BY YEAR(s.OrderDate)
+    HAVING SUM(s.OrderAmount) > 5000 (AND s.Territory = 3)
+    
+![](WHEREvsHaving.png)
+    
+
+## Examples
+
++ WHERE clause operates on ungrouped rows
++ Need to filter AFTER the grouping occurs <- HAVING
++ HAVING can filter on aggregated data
++ Create and use virtual tables to your advantage
+
+    + can apply WHERE when using FROM subquery
+
++ Equivalent queries: 
+
+    SELECT DepartmentName, COUNT(*)
+    FROM Employee AS e
+      INNER JOIN Department AS d
+      ON e.DepartmentID = d.DepartmentID
+    GROUP BY DepartmentName
+    HAVING COUNT(*) > 1;
+    
+    SELECT *
+    FROM 
+      (SELECT DepartmentName AS dept, COUNT(*) AS empCnt
+      FROM Employee AS e
+      INNER JOIN Department AS d
+      ON e.DepartmentID = d.DepartmentID
+      GROUP BY dept
+      ) AS grp
+    WHERE grp.empCnt > 1;
+
+## Hands On
+
++ Practice using AdventureWorks2012
+
+# 05-04: Chp 21 Advanced GROUP BY
+
++ Class should be relaxed now
++ Need to run totals
++ Need to group by a certain way, summarize it, and calculate subtotals and totals
++ GROUP BY Advanced
+
+    + GROUP BY goes beyond simple aggregations
+    1. ROLLUP <- calculate totals in a hierarchy
+    2. CUBE <- generate totals on all possible combinations
+    3. GROUPING SETS <- calculate totals on Union of TOtals
+    + Subclauses that simplify creating multiple grouping sets
+    + Important for Data Analysts (ME!!!)
+    
++ ROLLUP
+
+    + Summarize sales amount by year and month
+    SELECT YEAR(OrderDate) AS YEar, 
+      MONTH(OrderDate) AS Month,
+      SUM(TotalDue) AS Total
+    FROM Sales.SalesOrderHeader
+    WHERE YEAR(OrderDate) > 2006
+    GROUP BY 
+      ROLLUP(YEAR(OrderDate), 
+        MONTH(OrderDate));
+        
+    + Creates a group for each combination
+    + Moves from right to left
+    
+    GROUP BY ROLLUP(col1, col2, col3, ...)
+    -------------------------------------
+    col1, col2, col3
+    col1, col2, NULL
+    col1, NULL, NULL
+    NULL, NULL, NULL (Grand Total)
+    
++ CUBE
+
+    + provides totals for every single combination of columns it has
+    + Summarize sales amount by year and month
+    SELECT YEAR(OrderDate) AS YEar, 
+      MONTH(OrderDate) AS Month,
+      SUM(TotalDue) AS Total
+    FROM Sales.SalesOrderHeader
+    WHERE YEAR(OrderDate) > 2006
+    GROUP BY 
+      CUBE(YEAR(OrderDate), 
+        MONTH(OrderDate));
+        
++ GROUPING SETS 
+
+    + Run a summary or generate a total for the unique values in each column
+    + Generate sales amounts by years and months
+        SELECT YEAR(OrderDate) AS YEar, 
+      MONTH(OrderDate) AS Month,
+      SUM(TotalDue) AS Total
+    FROM Sales.SalesOrderHeader
+    WHERE YEAR(OrderDate) > 2006
+    GROUP BY 
+      GROUPING SETS(YEAR(OrderDate), 
+        MONTH(OrderDate));
+
+# Office Hours 4/27/2022
+
++ EXISTS vs. ANY VS. IN
+
+    + All similar to OR
+    + Mostly a performance dealio
+    + If something meets the criteria, EXISTS is 
+    + EXISTS is like an IF statement - returns TRUE values or not at all
+    + Choose to use EXISTS rather than IN when using a subquery
+    
++ ROLL UP vs. CUBE vs. GROUPING SETS
+
+    + Depends on what the objective is
+    + CUBE <- returns aggregates for all values in columns (every possible combination)
+        + returns entire dataset that you'd likely do something else with
+        + returns a whole dataset
+        + create massive dataset that combines many tables together
+    + ROLL UP <- creates aggregate set based on hierarchy of columns selected
